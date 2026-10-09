@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Connect Claude Desktop to InfoWorks ICM with the Musa_ICM_Bridge MCP server.">
+<title>Musa_ICM_Bridge · Claude for InfoWorks ICM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column styled like an engineering drawing sheet — title block up top, numbered install steps, flow diagram, troubleshooting table */
+:root{
+  --bg:#f3f6f7; --sheet:#ffffff; --fg:#14232b; --muted:#56676f; --line:#cdd8dc;
+  --accent:#0b6e80; --accent-soft:#e2f0f2; --code-bg:#eef3f5; --warn:#a4560b; --warn-soft:#fbefe2;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1619; --sheet:#132024; --fg:#e3ecef; --muted:#93a6ad; --line:#2a3b41;
+  --accent:#4cc0d3; --accent-soft:#16343a; --code-bg:#0f1b1f; --warn:#f0a35a; --warn-soft:#33240f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1619; --sheet:#132024; --fg:#e3ecef; --muted:#93a6ad; --line:#2a3b41;
+  --accent:#4cc0d3; --accent-soft:#16343a; --code-bg:#0f1b1f; --warn:#f0a35a; --warn-soft:#33240f; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.1;margin:0;letter-spacing:.01em}
+h1{font-size:clamp(2.4rem,6vw,3.6rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:600;margin-bottom:12px}
+h3{font-size:1.3rem;font-weight:600}
+p{margin:0;max-width:65ch}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.lead{font-size:1.12rem;color:var(--muted)}
+
+/* title block */
+.titleblock{border:1.5px solid var(--fg);background:var(--sheet)}
+.tb-main{padding:24px;display:flex;flex-direction:column;gap:12px;border-bottom:1.5px solid var(--fg)}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.tb-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.tb-grid div{padding:10px 14px;border-right:1px solid var(--line);min-width:0}
+.tb-grid div:last-child{border-right:0}
+.tb-grid dt{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tb-grid dd{margin:2px 0 0;font-weight:500;font-size:.95rem}
+@media (max-width:600px){.tb-grid{grid-template-columns:1fr 1fr}.tb-grid div:nth-child(2){border-right:0}.tb-grid div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+
+section{display:flex;flex-direction:column;gap:14px}
+
+/* flow diagram */
+.flow{overflow-x:auto;background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:16px}
+.flow svg{display:block;min-width:640px;width:100%;height:auto}
+.flow text{font-family:var(--body);fill:var(--fg)}
+.flow .sm{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.flow rect{fill:var(--sheet);stroke:var(--fg);stroke-width:1.4}
+.flow rect.hl{fill:var(--accent-soft);stroke:var(--accent)}
+.flow line,.flow path{stroke:var(--accent);stroke-width:1.6;fill:none}
+.flow polygon{fill:var(--accent)}
+
+/* checklist */
+.req{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.req div{border-top:2px solid var(--fg);padding-top:8px;min-width:0}
+.req b{display:block;font-weight:600}
+.req span{color:var(--muted);font-size:.93rem}
+
+/* steps */
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:22px;counter-reset:s}
+ol.steps>li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:14px}
+ol.steps>li::before{content:counter(s);font-family:var(--display);font-weight:700;font-size:1.6rem;width:44px;height:44px;border:1.5px solid var(--fg);display:grid;place-items:center}
+.step-body{display:flex;flex-direction:column;gap:8px;min-width:0}
+
+.code{position:relative;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;min-width:0}
+.code pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:.85rem;line-height:1.55}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:.72rem;background:var(--sheet);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer}
+.copy:hover{border-color:var(--accent);color:var(--accent)}
+.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.note{background:var(--warn-soft);border-left:3px solid var(--warn);padding:12px 16px;border-radius:0 6px 6px 0}
+.note b{color:var(--warn)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.93rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}
+td .ar{font-family:var(--body);direction:rtl;unicode-bidi:isolate;display:block;color:var(--muted);font-size:.88rem}
+
+/* series */
+.series{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.series div{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.series .tag{font-family:var(--mono);font-size:.72rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+footer{font-size:.88rem;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* download form */
+.dl{background:var(--sheet);border:1.5px solid var(--accent);border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.dl form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dl label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:500;min-width:0}
+.dl input[type=text],.dl input[type=email]{font:inherit;font-size:1rem;padding:9px 11px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--fg)}
+.dl input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.dl .full{grid-column:1/-1}
+.dl .consent{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400;color:var(--muted)}
+.dl .consent input{margin-top:4px}
+.dl button[type=submit]{grid-column:1/-1;justify-self:start;font-family:var(--display);font-size:1.15rem;font-weight:600;letter-spacing:.03em;background:var(--accent);color:var(--sheet);border:0;border-radius:5px;padding:10px 22px;cursor:pointer}
+.dl button[disabled]{opacity:.6;cursor:wait}
+.dl .msg{font-size:.92rem}
+.dl .msg.ok{color:var(--accent)} .dl .msg.err{color:var(--warn)}
+.hp{position:absolute;left:-9999px}
+@media (max-width:600px){.dl form{grid-template-columns:1fr}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+<header class="titleblock">
+  <div class="tb-main">
+    <span class="eyebrow">MCP bridge · InfoWorks ICM</span>
+    <h1>ICM Bridge Setup</h1>
+    <p class="lead">Connect Claude Desktop to InfoWorks ICM so Claude can run Ruby scripts in your open network and read the results back. Plan for about 10 minutes.</p>
+  </div>
+  <dl class="tb-grid">
+    <div><dt>Server</dt><dd>Musa_ICM_Bridge</dd></div>
+    <div><dt>Tested on</dt><dd>ICM Ultimate 2027</dd></div>
+    <div><dt>Platform</dt><dd>Windows</dd></div>
+    <div><dt>Rev.</dt><dd>0 · Oct 2026</dd></div>
+  </dl>
+</header>
+
+<section class="dl" id="download">
+  <h2>Download</h2>
+  <p>Enter your details and the download starts right away. Your name and email are sent to Musa only, so he can share updates and new skills. They are not shared with anyone else.</p>
+  <form id="dlform" novalidate>
+    <label for="f-name">Name<input id="f-name" name="name" type="text" required autocomplete="name"></label>
+    <label for="f-email">Email<input id="f-email" name="email" type="email" required autocomplete="email"></label>
+    <label for="f-company">Company<input id="f-company" name="company" type="text" autocomplete="organization"></label>
+    <label for="f-role">Role<input id="f-role" name="role" type="text" placeholder="e.g. Drainage engineer"></label>
+    <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <label class="consent full" for="f-ok"><input id="f-ok" type="checkbox" required> I agree to share my name and email with Musa Ibrahim.</label>
+    <button type="submit" id="f-btn">Download Musa_ICM_Bridge.zip</button>
+  </form>
+  <p class="msg" id="f-msg" role="status"></p>
+</section>
+
+<section>
+  <h2>How it works</h2>
+  <p>The bridge is a small Python server that Claude Desktop starts automatically. When Claude needs to work on the model, the server pastes the Ruby code into ICM's Ruby Script window and clicks <b>Run</b>. The script writes its printed output to a text file, and the bridge passes that output back to Claude.</p>
+  <div class="flow" role="img" aria-label="Claude Desktop sends Ruby code to the Musa_ICM_Bridge server, which types it into the ICM Ruby Script window. ICM writes output to result.txt, which the bridge returns to Claude.">
+    <svg viewBox="0 0 760 170" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><polygon points="0,0 10,5 0,10"/></marker></defs>
+      <rect x="10" y="30" width="160" height="62" rx="4"/>
+      <text x="90" y="58" text-anchor="middle" font-size="15" font-weight="600">Claude Desktop</text>
+      <text x="90" y="78" text-anchor="middle" class="sm">icm_run_ruby(code)</text>
+
+      <rect x="290" y="30" width="170" height="62" rx="4" class="hl"/>
+      <text x="375" y="58" text-anchor="middle" font-size="15" font-weight="600">Musa_ICM_Bridge</text>
+      <text x="375" y="78" text-anchor="middle" class="sm">python · pywinauto</text>
+
+      <rect x="580" y="30" width="170" height="62" rx="4"/>
+      <text x="665" y="58" text-anchor="middle" font-size="15" font-weight="600">InfoWorks ICM</text>
+      <text x="665" y="78" text-anchor="middle" class="sm">Ruby Script → Run</text>
+
+      <line x1="170" y1="50" x2="288" y2="50" marker-end="url(#ah)"/>
+      <line x1="460" y1="50" x2="578" y2="50" marker-end="url(#ah)"/>
+      <text x="229" y="42" text-anchor="middle" class="sm">stdio</text>
+      <text x="519" y="42" text-anchor="middle" class="sm">paste + click</text>
+
+      <path d="M665 92 V135 H90 V94" marker-end="url(#ah)"/>
+      <text x="375" y="155" text-anchor="middle" class="sm">output → C:\icm_mcp_poc\result.txt → back to Claude</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2>What you need</h2>
+  <div class="req">
+    <div><b>InfoWorks ICM</b><span>With Ruby scripting available in the UI.</span></div>
+    <div><b>Python 3.10+</b><span>From python.org. Tick “Add python.exe to PATH” during install.</span></div>
+    <div><b>Claude Desktop</b><span>Signed in. MCP servers are configured from its settings file.</span></div>
+    <div><b>The bridge files</b><span>Use the download form at the top of this page.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Install</h2>
+  <ol class="steps">
+    <li><div class="step-body">
+      <h3>Put the folder somewhere permanent</h3>
+      <p>Unzip so you end up with <code>C:\Musa_ICM_Bridge\icm_mcp_server.py</code>. Claude Desktop runs the files from this folder every time it starts, so don't leave it in Downloads.</p>
+      <div class="code"><button class="copy" type="button">Copy</button><pre>C:\Musa_ICM_Bridge\
+  icm_mcp_server.py          MCP server (tools Claude sees)
+  icm_controller_final2.py   drives the ICM Ruby Script window
+  requirements.txt           mcp, pywinauto
+  install.bat                one-click setup
+  register_claude.py         adds Musa_ICM_Bridge to Claude's config</pre></div>
+    </div></li>
+
+    <li><div class="step-body">
+      <h3>Run install.bat</h3>
+      <p>Double-click it. It installs the two Python packages and adds <code>Musa_ICM_Bridge</code> to Claude Desktop's config. Servers you already have are kept, and the old config is saved as <code>claude_desktop_config.json.bak</code>.</p>
+      <p>To install the packages by hand instead:</p>
+      <div class="code"><button class="copy" type="button">Copy</button><pre>python -m pip install mcp pywinauto</pre></div>
+    </div></li>
+
+    <li><div class="step-body">
+      <h3>Or edit the config manually</h3>
+      <p>Open <code>%APPDATA%\Claude\claude_desktop_config.json</code> (in Claude Desktop: Settings → Developer → Edit Config) and add this entry inside <code>"mcpServers"</code>. Keep the double backslashes.</p>
+      <div class="code"><button class="copy" type="button">Copy</button><pre>"Musa_ICM_Bridge": {
+  "command": "python",
+  "args": ["C:\\Musa_ICM_Bridge\\icm_mcp_server.py"]
+}</pre></div>
+      <p class="note"><b>Check:</b> if <code>python</code> isn't on PATH, put the full path to <code>python.exe</code> in <code>"command"</code> instead.</p>
+    </div></li>
+
+    <li><div class="step-body">
+      <h3>Restart Claude Desktop completely</h3>
+      <p>Closing the window isn't enough. Right-click the Claude icon in the system tray, choose <b>Quit</b>, then open it again. Under Settings → Developer, <code>Musa_ICM_Bridge</code> should show as running.</p>
+    </div></li>
+
+    <li><div class="step-body">
+      <h3>Open ICM and the Ruby Script window</h3>
+      <p>Open your network in ICM, then open the Ruby Script window with its <b>Run</b> button and leave it on screen. The bridge looks for a window titled <code>InfoWorks ICM [...]</code> and the <b>Run</b> button inside it.</p>
+    </div></li>
+
+    <li><div class="step-body">
+      <h3>Test it</h3>
+      <p>Ask Claude in a new chat:</p>
+      <div class="code"><button class="copy" type="button">Copy</button><pre>Use Musa_ICM_Bridge to give me a summary of the open ICM network.</pre></div>
+      <p>You should get the network name and counts of nodes, links, conduits, culverts, pumps, weirs and orifices.</p>
+    </div></li>
+  </ol>
+</section>
+
+<section>
+  <h2>Tools Claude gets</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>icm_run_ruby</code></td><td>Runs any Ruby code in the open ICM session and returns what the script prints. Each script has a 30-second limit, which you can change with <code>run_timeout</code> in the controller file.</td></tr>
+      <tr><td><code>icm_network_summary</code></td><td>Returns the network name and object counts. Good for a first test.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Troubleshooting</h2>
+  <p>The bridge's error messages are in Arabic. Here is what each one means and what to do.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Message</th><th>Meaning</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ar">مش لاقي أي نافذة InfoWorks ICM شغالة</span></td><td>No ICM window found</td><td>Open ICM with a network loaded.</td></tr>
+      <tr><td><span class="ar">مش لاقي زرار 'Run'</span></td><td>Ruby Script window isn't open</td><td>Open it and keep it visible.</td></tr>
+      <tr><td><span class="ar">لقيت زرار Run بس مش لاقي الـ text editor</span></td><td>Found Run but not the code box</td><td>Close and reopen the Ruby Script window.</td></tr>
+      <tr><td><span class="ar">استنينا 30 ثانية ومفيش ملف نتيجة</span></td><td>No result within the time limit</td><td>The script is still running or crashed. Check the ICM output pane, or raise <code>run_timeout</code>.</td></tr>
+      <tr><td>Musa_ICM_Bridge missing in Claude</td><td>The server didn't start</td><td>Check the JSON for typos and the Python path, then quit Claude from the tray and reopen it.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>While a script runs:</b> don't click or type in the ICM window. The bridge pastes the code and presses Run for you, and anything you do in that window at the same time can interrupt it.</p>
+</section>
+
+<section>
+  <h2>Coming in this series</h2>
+  <p>With ICM and HEC-HMS both connected, skills can link the two models without manual export and import.</p>
+  <div class="series">
+    <div><span class="tag">HEC-HMS</span><h3>Run scenarios</h3><p>Run several storm scenarios and collect the peak flows.</p></div>
+    <div><span class="tag">Hydrology</span><h3>Area reduction factor</h3><p>Calculate the ARF from catchment area and apply it to point rainfall.</p></div>
+    <div><span class="tag">ICM 2D</span><h3>Draw outfalls</h3><p>Snap HMS outfalls to the 2D zone boundary and draw inflow boundary lines.</p></div>
+    <div><span class="tag">HMS → ICM</span><h3>Upload inflows</h3><p>Write the HMS hydrographs to ICM inflow (QIN) files, ready to import.</p></div>
+  </div>
+</section>
+
+<footer>Built by Musa Ibrahim, Hydrology Engineer. Code on <a href="https://github.com/musaibrahim5411-lang/Musa_ICM_Bridge">GitHub</a>. This is a community project and is not affiliated with or endorsed by Autodesk. InfoWorks ICM is a trademark of its owner.</footer>
+</div>
+
+<script>
+const NOTIFY_EMAIL='musaibrahim5411@gmail.com';
+const ZIP='Musa_ICM_Bridge.zip';
+const f=document.getElementById('dlform'),btn=document.getElementById('f-btn'),msg=document.getElementById('f-msg');
+function startDownload(){const a=document.createElement('a');a.href=ZIP;a.download=ZIP;document.body.appendChild(a);a.click();a.remove();}
+f.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=f.name.value.trim(),email=f.email.value.trim();
+  if(!name||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.className='msg err';msg.textContent='Please enter your name and a valid email.';return;}
+  if(!document.getElementById('f-ok').checked){msg.className='msg err';msg.textContent='Please tick the box to agree.';return;}
+  if(f._honey.value)return;
+  btn.disabled=true;msg.className='msg';msg.textContent='Preparing your download…';
+  try{
+    await fetch('https://formsubmit.co/ajax/'+NOTIFY_EMAIL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({name,email,company:f.company.value.trim(),role:f.role.value.trim(),
+        _subject:'New Musa_ICM_Bridge download: '+name,_replyto:email,_template:'table',_captcha:'false',
+        downloaded_at:new Date().toISOString(),page:location.href})});
+  }catch(err){/* still let them download */}
+  startDownload();
+  msg.className='msg ok';msg.textContent='Thanks! Your download has started. If it didn’t, ';
+  const a=document.createElement('a');a.href=ZIP;a.textContent='click here';a.setAttribute('download','');msg.appendChild(a);msg.append('. Setup steps are below.');
+  btn.disabled=false;
+});
+
+document.querySelectorAll('.copy').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const pre=btn.parentElement.querySelector('pre');
+    const done=()=>{btn.textContent='Copied';setTimeout(()=>btn.textContent='Copy',1500)};
+    const fallback=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected'};
+    try{navigator.clipboard.writeText(pre.innerText).then(done,fallback)}catch(e){fallback()}
+  });
+});
+</script>
+
+</body>
+</html>
